@@ -10,7 +10,7 @@ import UIKit
 private let reuseIdentifier = "CollectionViewCell"
 
 class CollectionViewController: UICollectionViewController {
-    var dbManager: DBManager!
+    var dbManager: DBManager?
     var tracks: [DetailedTrackInfo] = []
     var networkService: NetworkService!
     override func viewDidLoad() {
@@ -34,8 +34,10 @@ class CollectionViewController: UICollectionViewController {
     }
     
     private func reloadTracks() {
-        tracks = dbManager.obtain()
-        collectionView.reloadData()
+        if let dbManager = dbManager {
+            tracks = dbManager.obtain()
+            collectionView.reloadData()
+        }
     }
     
     /*

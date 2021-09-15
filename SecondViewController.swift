@@ -11,14 +11,11 @@ import RealmSwift
 
 class SecondViewController: UIViewController {
     
-    var dbManager: DBManager!
-    var trackInfo: DetailedTrackInfo!
-    var networkServices: NetworkService!
-    var trackTimer: Timer!
-    
-    
-    
-    var player: AVAudioPlayer!
+    var dbManager: DBManager?
+    var trackInfo: DetailedTrackInfo?
+    var networkServices: NetworkService?
+    var trackTimer: Timer?
+    var player: AVAudioPlayer?
     
     @IBOutlet weak var imageView: UIImageView!
     
@@ -43,13 +40,15 @@ class SecondViewController: UIViewController {
         // Do any additional setup after loading the view.
     }
     @IBAction func addToFavouritesButtonTapped(_ sender: Any) {
-        if trackInfo.isFavourite {
-            dbManager.delete(trackInfo)
-        } else {
-            let i = trackInfo.copy() as! DetailedTrackInfo
-            dbManager.save(i)
+        if let trackInfo = trackInfo {
+            if (trackInfo.isFavourite) {
+                dbManager?.delete(trackInfo)
+            } else {
+                let i = trackInfo.copy() as! DetailedTrackInfo
+                dbManager?.save(i)
+            }
         }
-        trackInfo.isFavourite.toggle()
+        trackInfo?.isFavourite.toggle()
         updateFavouritesButton()
     }
         //guard let collectionViewController = storyboard.instantiateViewController(identifier: "CollectionViewController") as? CollectionViewController else {return}
@@ -70,8 +69,10 @@ class SecondViewController: UIViewController {
     }
     
     private func updateFavouritesButton() {
-        let image = trackInfo.isFavourite ? UIImage(systemName: "heart.fill") : UIImage(systemName: "heart")
-        addToFavouritesButton.setImage(image, for: .normal)
+        if let trackInfo = trackInfo {
+            let image = trackInfo.isFavourite ? UIImage(systemName: "heart.fill") : UIImage(systemName: "heart")
+            addToFavouritesButton.setImage(image, for: .normal)
+        }
     }
     private func upperButtonsConfiguration(_ buttons: [UIButton]) {
         buttons.forEach { button in
@@ -84,17 +85,19 @@ class SecondViewController: UIViewController {
         
     }
     private func getImage(){
-        networkServices.downloadImage(trackInfo.artworkUrl100) {
-            imageData in
-            guard let imageData = imageData else { return }
-            self.imageView.image = UIImage(data: imageData)
+        if let url = trackInfo?.artworkUrl100 {
+            networkServices?.downloadImage(url) {
+                imageData in
+                guard let imageData = imageData else { return }
+                self.imageView.image = UIImage(data: imageData)
+            }
         }
     }
     
     private func updateUI() {
         getImage()
-        trackNameLabel.text = trackInfo.trackName
-        artistNameLabel.text = trackInfo.artistName
+        trackNameLabel.text = trackInfo?.trackName
+        artistNameLabel.text = trackInfo?.artistName
     }
     
     @IBAction func backButtonTapped(_ sender: Any) {
@@ -105,7 +108,7 @@ class SecondViewController: UIViewController {
         guard let player = player else { return }
         if player.isPlaying {
             player.pause()
-            trackTimer.invalidate()
+            trackTimer?.invalidate()
             playButton.setImage(UIImage(systemName: "play.fill"), for: .normal)
         } else {
             player.play()
@@ -123,20 +126,23 @@ class SecondViewController: UIViewController {
     }
     private func configurePlayer() {
         timeIndicator.setProgress(0, animated: false)
-        networkServices.downloadTrack(trackInfo.previewUrl) { url in
-            do {
-                self.player = try AVAudioPlayer.init(contentsOf: url)
-                self.player.prepareToPlay()
-                self.player.volume = 0.5
-                self.player.delegate = self
-                DispatchQueue.main.async {
-                    self.totalTimeLabel.text = self.player.duration.stringFromTimeInterval()
+        if let url = trackInfo?.previewUrl {
+            networkServices?.downloadTrack(url) { url in
+                do {
+                    self.player = try AVAudioPlayer.init(contentsOf: url)
+                    self.player?.prepareToPlay()
+                    self.player?.volume = 0.5
+                    self.player?.delegate = self
+                    DispatchQueue.main.async {
+                        self.totalTimeLabel.text = self.player?.duration.stringFromTimeInterval()
+                    }
+                }
+                catch let error {
+                    print(error)
                 }
             }
-            catch let error {
-                print(error)
-            }
         }
+      
     }
     
     override func viewDidAppear(_ animated: Bool) {
@@ -162,7 +168,7 @@ class SecondViewController: UIViewController {
 
 extension SecondViewController: AVAudioPlayerDelegate {
     func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
-        trackTimer.invalidate()
+        trackTimer?.invalidate()
         playButton.setImage(UIImage(systemName: "play.fill"), for: .normal)
     }
 }

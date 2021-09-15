@@ -10,8 +10,8 @@ import SwiftyJSON
 
 class ViewController: UIViewController {
     
-    var networkService: NetworkService!
-    var dbManger: DBManager!
+    var networkService: NetworkService?
+    var dbManger: DBManager?
     let queue = DispatchQueue.global(qos: .utility)
     var numberOfSongs : [DetailedTrackInfo] = []
     var reuseIdentifier = "track cell"
@@ -52,14 +52,14 @@ class ViewController: UIViewController {
         }
         tableView.isHidden = true
         activityIndicator.startAnimating()
-        networkService.downloadInfo(stringToURL) { result in
+        networkService?.downloadInfo(stringToURL) { result in
             self.tableView.isHidden = false
             self.activityIndicator.isHidden = true
-            self.numberOfSongs = result
+            self.numberOfSongs = result //MARK: нельзя отказаться от записи self.numberOfSongs так как это проперти класса
             self.tableView.reloadData()
-            let favList = self.dbManger.obtain().map { $0.trackId}
+            let favList = self.dbManger?.obtain().map { $0.trackId}
             self.numberOfSongs.forEach { element in
-                if favList.contains(element.trackId) {
+                if ((favList?.contains(element.trackId)) != nil) {
                     element.isFavourite = true
                 }
             }
@@ -70,7 +70,7 @@ class ViewController: UIViewController {
         if let data = numberOfSongs[index].imageData, let image = UIImage(data: data)  {
             return image
         } else {
-            networkService.downloadImage(numberOfSongs[index].artworkUrl60) { imageData in
+            networkService?.downloadImage(numberOfSongs[index].artworkUrl60) { imageData in
                 self.numberOfSongs[index].imageData = imageData
                 self.tableView.reloadRows(at: [IndexPath(row: index, section: 0)], with: .fade)
             }
