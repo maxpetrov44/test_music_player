@@ -34,7 +34,7 @@ class SecondViewController: UIViewController {
         
 //        networkServices = NetworkService()
         updateUI()
-        configurePlayer()
+        configurePlayer(self)
         configureUI()
         dbManager = DBManagerImpl.shared
         // Do any additional setup after loading the view.
@@ -84,18 +84,18 @@ class SecondViewController: UIViewController {
         }
         
     }
-    private func getImage(){
+    private func getImage(_ view: UIViewController){
         if let url = trackInfo?.artworkUrl100 {
-            networkServices?.downloadImage(url) {
+            networkServices?.downloadImage(url) { [weak view]
                 imageData in
-                guard let imageData = imageData else { return }
+                guard let imageData = imageData, view != nil else { return }
                 self.imageView.image = UIImage(data: imageData)
             }
         }
     }
     
     private func updateUI() {
-        getImage()
+        getImage(self)
         trackNameLabel.text = trackInfo?.trackName
         artistNameLabel.text = trackInfo?.artistName
     }
@@ -113,21 +113,22 @@ class SecondViewController: UIViewController {
         } else {
             player.play()
             playButton.setImage(UIImage(systemName: "pause.fill"), for: .normal)
-            trackTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
+            trackTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self]_ in
                 let currentTime = player.currentTime
                 let totalTime = player.duration
                 let progress = Float(currentTime / totalTime)
-                self.currentTimeLabel.text = currentTime.stringFromTimeInterval()
-                self.timeIndicator.setProgress(progress, animated: true)
+                self?.currentTimeLabel.text = currentTime.stringFromTimeInterval()
+                self?.timeIndicator.setProgress(progress, animated: true)
                 
             }
         }
         
     }
-    private func configurePlayer() {
+    private func configurePlayer(_ view: UIViewController) {
         timeIndicator.setProgress(0, animated: false)
         if let url = trackInfo?.previewUrl {
-            networkServices?.downloadTrack(url) { url in
+            networkServices?.downloadTrack(url) { [weak view] url in
+                guard view != nil else { return }
                 do {
                     self.player = try AVAudioPlayer.init(contentsOf: url)
                     self.player?.prepareToPlay()

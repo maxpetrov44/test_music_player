@@ -38,12 +38,12 @@ class ViewController: UIViewController {
         tableView.keyboardDismissMode = .onDrag
         tableView.rowHeight = UITableView.automaticDimension
         searchBar.searchTextField.textColor = UIColor.white
-        downloadInfo("music")
+        downloadInfo("music", self)
     }
     
     
 
-    private func downloadInfo(_ searchTerms: String?)  {
+    private func downloadInfo(_ searchTerms: String?, _ view: UIViewController)  {
         var stringToURL = ""
         if searchTerms == "" {
             stringToURL = "https://itunes.apple.com/search?term=music&limit=25&attributes=artistTerm+songTerm."
@@ -52,10 +52,11 @@ class ViewController: UIViewController {
         }
         tableView.isHidden = true
         activityIndicator.startAnimating()
-        networkService?.downloadInfo(stringToURL) { result in
+        networkService?.downloadInfo(stringToURL) { [weak view] result in
+            guard view != nil else { return }
             self.tableView.isHidden = false
             self.activityIndicator.isHidden = true
-            self.numberOfSongs = result //MARK: нельзя отказаться от записи self.numberOfSongs так как это проперти класса
+            self.numberOfSongs = result
             self.tableView.reloadData()
             let favList = self.dbManger?.obtain().map { $0.trackId}
             self.numberOfSongs.forEach { element in
@@ -66,11 +67,12 @@ class ViewController: UIViewController {
         }
     }
      
-    private func getImage(for index: Int) -> UIImage? {
+    private func getImage(for index: Int, _ view: UIViewController) -> UIImage? {
         if let data = numberOfSongs[index].imageData, let image = UIImage(data: data)  {
             return image
         } else {
-            networkService?.downloadImage(numberOfSongs[index].artworkUrl60) { imageData in
+            networkService?.downloadImage(numberOfSongs[index].artworkUrl60) { [weak view] imageData in
+                guard view != nil else { return }
                 self.numberOfSongs[index].imageData = imageData
                 self.tableView.reloadRows(at: [IndexPath(row: index, section: 0)], with: .fade)
             }
@@ -99,7 +101,7 @@ extension ViewController: UITableViewDataSource, UITableViewDelegate {
         cell.trackNameLabel.text = numberOfSongs[indexPath.row].trackName
         cell.artistNameLabel.text = numberOfSongs[indexPath.row].artistName
         
-        cell.trackLogo.image = getImage(for: indexPath.row)
+        cell.trackLogo.image = getImage(for: indexPath.row, self)
         if  cell.trackLogo.image == nil {
             cell.cellActivityIndicator.startAnimating()
         } else {
@@ -130,7 +132,7 @@ extension ViewController: UISearchBarDelegate {
     
         numberOfSongs = []
         tableView.reloadData()
-        downloadInfo(adjustedString)
+        downloadInfo(adjustedString, self)
 
     }
     
